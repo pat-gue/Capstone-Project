@@ -1,0 +1,416 @@
+---
+title: "Capstone Project"
+author: "Patrick"
+date: "2022-12-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, error = TRUE)
+```
+
+## Google Data Analytics Professional Certificate Capstone Project
+
+
+
+
+
+### Case Study: How Does a Bike-Share Navigate Speedy Success?
+
+
+#### Summary
+
+This case study by Patrick D. Gueta is the final __capstone project__ on the course _Google Data Analytics Professional Certificate_ where students are asked to do a (close to) real life project to showcase the skills they acquired in the courses. I choose the __Cyclistic Bike-Share Case Study__. The data has been made available by __Motivate International Inc.__ under this [license.](https://ride.divvybikes.com/data-license-agreement)
+
+
+#### Scenario
+
+I am a junior data analyst working in the marketing analyst team at Cyclistic, a bike-share company in Chicago. The director
+of marketing believes the company’s future success depends on maximizing the number of annual memberships. Therefore,
+your team wants to understand how casual riders and annual members use Cyclistic bikes differently. From these insights,
+your team will design a new marketing strategy to convert casual riders into annual members.  \
+
+But first, Cyclistic executives
+must approve your recommendations, so they must be backed up with compelling data insights and professional data
+visualizations.
+
+
+#### About the company
+
+In 2016, Cyclistic launched a successful bike-share offering. Since then, the program has grown to a fleet of 5,824 bicycles that
+are geotracked and locked into a network of 692 stations across Chicago. The bikes can be unlocked from one station and
+returned to any other station in the system anytime.  \
+
+Until now, Cyclistic’s marketing strategy relied on building general awareness and appealing to broad consumer segments.
+One approach that helped make these things possible was the flexibility of its pricing plans: single-ride passes, full-day passes,
+and annual memberships. Customers who purchase single-ride or full-day passes are referred to as casual riders. Customers
+who purchase annual memberships are Cyclistic members.  \
+
+Cyclistic’s finance analysts have concluded that annual members are much more profitable than casual riders. Although the
+pricing flexibility helps Cyclistic attract more customers, Lily Moreno(Cyclistic’s director of marketing) believes that maximizing the number of annual members will
+be key to future growth. Rather than creating a marketing campaign that targets all-new customers, Moreno believes there is a
+very good chance to convert casual riders into members. She notes that casual riders are already aware of the Cyclistic
+program and have chosen Cyclistic for their mobility needs.  \
+
+Lily Moreno has asked the marketing analyst team (of which I am a junior analyst learning the ropes) to design strategies aimed at converting casual riders into annual members. Lily has asked these questions:
+
+1. How do annual members and casual riders use Cyclistic bikes differently?
+2. Why would casual riders buy Cyclistic annual memberships?
+3. How can Cyclistic use digital media to influence casual riders to become members?
+
+As the Junior Data Analyst of the Marketing Analyst team, Morena has asked me to tackle the first question.
+
+##### _1. How do annual members and casual riders use Cyclistic bikes differently?_   \
+
+
+
+
+
+### Data cleaning and wrangling
+
+#### The data
+
+Google let me use the previous 12 months of the __Cyclistic’s “historical trip data”  dataset__ which can be found [here.](https://divvy-tripdata.s3.amazonaws.com/index.html)  \
+It should be noted that Cyclistic Bike-Share is a fictional company. The data has been cleansed of private onfo such as names, addresses, credit card info, etc prior Divvy Bikes posting the data online for use.
+
+#### Loading packages and raw data to use.
+```{r load raw data and packages, message=FALSE}
+library(tidyverse)
+library(lubridate)
+library(scales)
+## Raw data
+dec_2021 <- read.csv("202112-divvy-tripdata.csv")
+jan_2022 <- read.csv("202201-divvy-tripdata.csv")
+feb_2022 <- read.csv("202202-divvy-tripdata.csv")
+mar_2022 <- read.csv("202203-divvy-tripdata.csv")
+apr_2022 <- read.csv("202204-divvy-tripdata.csv")
+may_2022 <- read.csv("202205-divvy-tripdata.csv")
+jun_2022 <- read.csv("202206-divvy-tripdata.csv")
+jul_2022 <- read.csv("202207-divvy-tripdata.csv")
+aug_2022 <- read.csv("202208-divvy-tripdata.csv")
+sep_2022 <- read.csv("202209-divvy-publictripdata.csv")
+oct_2022 <- read.csv("202210-divvy-tripdata.csv")
+nov_2022 <- read.csv("nov_22.csv")
+```
+
+
+#### Checking data structures. 
+```{r check data structures}
+
+str(dec_2021)   
+str(jan_2022)   
+str(feb_2022)   
+str(mar_2022)   
+str(apr_2022)   
+str(may_2022)   
+str(jun_2022)   
+str(jul_2022)   
+str(aug_2022)   
+str(sep_2022)   
+str(oct_2022)   
+str(nov_2022)
+```
+I need to change (started_at, ended_at) to datetime type.
+
+#### Combine the data
+Merging 12 months of raw data. I'll name it __all_trips__.
+```{r merge dataset}
+all_trips <- bind_rows(
+    dec_2021, jan_2022, feb_2022, mar_2022, apr_2022, may_2022, jun_2022, jul_2022, aug_2022, sep_2022, oct_2022, nov_2022
+    )
+### Checking first 6 rows
+head(all_trips)
+```
+
+
+#### Removing NA/Missing Values and duplicates.
+I noticed that there was some missing values on start_station_name/id
+and end_station_name/id so let's remove them and also the duplicated rows.
+
+
+```{r Removing NA/Missing Values and Duplicated Rows}
+all_trips_clean <- all_trips[!(is.na(all_trips$start_station_name) |
+                            all_trips$start_station_name == "" |
+                            is.na(all_trips$start_station_id) |
+                            all_trips$start_station_id == "" |
+                            is.na(all_trips$end_station_name) |
+                            all_trips$end_station_name == "" |
+                            is.na(all_trips$end_station_id) |
+                            all_trips$end_station_id == ""),]
+
+all_trips_clean <- all_trips_clean[!duplicated(all_trips_clean$ride_id), ]
+```
+
+
+#### Check summary and str of merged data 
+```{r check structures}
+summary(all_trips_clean)
+str(all_trips_clean)
+
+```
+#### Change Data types
+
+```{r change datatype, warning=FALSE}
+
+
+all_trips_clean <- all_trips_clean %>% 
+  mutate(started_at = as.POSIXct(started_at),
+         ended_at = as.POSIXct(ended_at))
+
+```
+
+#### Adding new columns
+New columns for ride_length(end_time - start_time), date,month,year,days of the week, time to easily analyze and visualize it later.
+
+```{r new columns}
+
+all_trips_clean$ride_length <- (difftime(all_trips_clean$ended_at,  all_trips_clean$started_at, units = "min"))  ## ride_length in min
+all_trips_clean$date <- as.Date(all_trips_clean$started_at)  ## date 
+all_trips_clean$year <- format(as.Date(all_trips_clean$date), "%Y") ## year
+all_trips_clean$month <- format(as.Date(all_trips_clean$date), "%B") ## month
+all_trips_clean$day <- format(as.Date(all_trips_clean$date), "%A") ## day of the week
+
+all_trips_clean$start_time <- format(as.POSIXct(all_trips_clean$started_at), "%H")
+### time column
+```
+
+
+#### Removing negative ride length
+Looking at the dataset I noticed that there was some negative ride length so I will remove it. 
+
+```{r remove negative ride length}
+all_trips_clean <- all_trips_clean %>% 
+  filter(!(ride_length < 0))
+
+### change type to numeric for analysis
+
+all_trips_clean$ride_length <- as.numeric(as.character(all_trips_clean$ride_length))
+
+is.numeric(all_trips_clean$ride_length)
+
+```
+
+#### Making datasets for data whose ride length(< 20 min ride, 21-40 min ride, 41-60 min ride and > 60 min ride) might be useful to save these.
+
+```{r ride length}
+all_trips_less_20min <- all_trips_clean %>% 
+  filter(ride_length < 20)
+
+all_trips_21_40min <- all_trips_clean %>% 
+  filter(between(ride_length,20, 40))
+
+all_trips_41_60min <- all_trips_clean %>% 
+  filter(between(ride_length,41,60))
+
+all_trips_great_60min <- all_trips_clean %>% 
+  filter(ride_length > 60)
+
+```
+
+
+### Understanding DATASET
+
+Count of member_casual. Reminder that the dataset doesn't show returning customers because of its unique id ride and no name information about them.
+```{r}
+table(all_trips_clean$member_casual)
+
+### get the percentage for user type
+(table(all_trips_clean$member_casual)/length(all_trips_clean$member_casual)) * 100
+
+```
+
+Descriptive analysis on ride_length comparing customers. The average ride length of casual user is almost twice as long as the average ride length of annual members.
+```{r ride_length analysis}
+### median, mean, max, min of ride length to member_casual
+all_trips_clean %>% 
+  group_by(member_casual) %>% 
+  summarize(ride_med_mins = median(ride_length),
+            ride_ave_mins = mean(ride_length),
+            longest_ride = max(ride_length),
+            shortest_ride= min(ride_length))
+
+
+```
+
+
+Distribution of type of bike used by the users.
+```{r bike type vs users, message=FALSE}
+
+all_trips_clean %>%
+  group_by(member_casual, rideable_type) %>% 
+  summarize(num_rides = n()) %>% 
+  mutate(perc = 100 * num_rides / sum(num_rides), "%") %>% 
+  ungroup %>% 
+  arrange(-perc)
+
+
+```
+### Visualization
+
+
+```{r Bike type graph, message = FALSE}
+all_trips_clean %>% 
+  group_by(member_casual, rideable_type) %>% 
+  summarize(num_rides = n()) %>% 
+  ggplot(aes(rideable_type, num_rides, fill = member_casual)) + 
+  geom_col() +
+  labs(title = "Bike type vs Users", x = "Bike type", y = "No. of rides", fill="User Type")
+
+
+```
+
+### Most popular station 
+For casual user, the most popular stations are Streeter Dr & Grand Ave and DuSable Lake Shore Dr & Monroe St. As for annual members,
+Kingsbury St & Kinzie St and Clark St & Elm St are the most popular station.
+
+```{r Popular station, message=FALSE}
+all_trips_clean %>% 
+  group_by(start_station_name) %>% 
+  summarize(num_rides = n()) %>% 
+  arrange(-num_rides)
+
+
+
+all_trips_clean %>% 
+  group_by(start_station_name, member_casual) %>% 
+  summarize(num_rides = n()) %>% 
+  arrange(-num_rides)
+
+
+```
+
+
+#### Most Popular Month
+
+Most popular month is July, June and August.
+```{r Most popular month, message=FALSE}
+all_trips_clean %>% 
+  group_by(month) %>% 
+  summarize(num_rides = n()) %>% 
+  arrange(-num_rides)
+
+
+##popular month by user
+all_trips_clean %>% 
+  group_by(month, member_casual) %>% 
+  summarize(num_rides = n()) %>% 
+  arrange(-num_rides)
+
+```
+#### Visualization
+Months June-Aug have the highest count of users for both casual and annual members.
+```{r popular months graph, message=FALSE}
+all_trips_clean %>% 
+  group_by(month, member_casual) %>% 
+  summarize(num_rides = n()) %>% 
+  ggplot(aes(month, num_rides, fill = member_casual)) + 
+  geom_col() + scale_x_discrete(limits = month.name) +
+  scale_y_continuous(labels = label_comma()) +
+  coord_flip() + 
+  labs(title = "Most Popular Months", y = "No. of rides", x = "Month", fill="User Type")
+```
+
+#### Most Popular Day of the week
+Saturdays are the most user but weekdays are more popular by annual members.
+```{r popular days, message=FALSE}
+
+###popular days
+all_trips_clean %>% 
+  group_by(day) %>% 
+  summarize(num_rides = n()) %>% 
+  arrange(-num_rides)
+
+
+## popular days with users and ave ride duration(in minutes)
+all_trips_clean %>% 
+  group_by(day, member_casual) %>% 
+  summarize(num_rides = n(),
+            ave_duration = mean(ride_length)) %>% 
+  arrange(-num_rides)
+
+```
+#### Visualization
+
+```{r popular days graph, message=FALSE}
+
+all_trips_clean %>%
+  mutate(weekday = wday(started_at, label = TRUE)) %>% 
+  group_by(weekday, member_casual) %>% 
+  summarize(num_rides = n()) %>% 
+  ggplot(aes(weekday,
+             num_rides,
+             fill = member_casual)) +
+  geom_col() +
+  scale_y_continuous(labels = label_comma())+
+  labs(title="Most Popular Day", x="Day of Week", y="No. of Rides", fill="User Type")
+
+```
+
+
+
+#### Most Popular time of the day
+
+4pm - 6pm is the most popular start time during weekdays but on weekend there is a difference.
+
+
+```{r Most Popular start time, message=FALSE}
+all_trips_clean %>% 
+  group_by(start_time) %>% 
+  summarize(num_rides = n()) %>% 
+  arrange(-num_rides)
+
+
+## popular days with users and ave ride duration(in minutes)
+all_trips_clean %>% 
+  group_by(start_time, member_casual) %>% 
+  summarize(ride_num = n(),
+            ave_duration = mean(ride_length)) %>% 
+  arrange(-ride_num)
+```
+
+#### Visualization 
+
+
+```{r Popular start time, message=FALSE}
+all_trips_clean %>% 
+  group_by(start_time, member_casual) %>% 
+  summarize(ride_num = n(),
+            ave_duration = mean(ride_length)) %>% 
+  arrange(-ride_num) %>% 
+  ggplot(aes(start_time, ride_num, fill = member_casual)) +
+  labs(title="Popular Start time", x="start time", y="No. of Rides", fill="User Type") +
+  geom_col() +
+  scale_y_continuous(labels = label_comma())
+```
+Most Popular start time by day 
+
+4pm - 6pm is the most popular start time during weekdays but on weekend there is a difference. Most users start their rides on weekdays after office hours(4pm - 6pm), while on weekend riders start time is more spread on 11 am - 6pm.
+```{r start time by part of the week, message=FALSE}
+
+all_trips_clean %>% 
+  mutate(weekday = wday(started_at, label = TRUE),
+         week_part = ifelse(weekday == "Sun" | weekday == "Sat", "weekend", "weekday")) %>% 
+  group_by(start_time, member_casual, weekday, week_part) %>% 
+  summarize(ride_num = n(),
+            ave_duration = mean(ride_length)) %>% 
+  arrange(-ride_num) %>%
+  ggplot(aes(start_time, ride_num, fill = member_casual)) +
+  labs(title="Popular Start time", x="start time", y="No. of Rides", fill="User Type") +
+  geom_col() + 
+  scale_y_continuous(labels = label_comma())+
+  coord_flip()+
+  facet_wrap(~ week_part)
+
+```
+
+
+
+
+
+
+### Recommendation
+1. Give special perks to annual members to have priority use in the busiest month of the year(June, July, Aug.)
+
+2. During the months with most casual users (June, July, Aug.) is the best month to put aggressive marketing campaigns.
+
+3. Put advertisements on the most popular stations that is use by casual users.
